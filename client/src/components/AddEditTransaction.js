@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Form, Input, message, Modal, Select } from "antd";
-import Spinner from "./Spinner";
 import axios from "axios";
+import moment from "moment";
+import { Form, Input, message, Modal, Select, DatePicker } from "antd";
+import Spinner from "./Spinner";
+
 import {
   Button,
   Dialog,
@@ -11,6 +13,9 @@ import {
   DialogTitle,
 } from "@mui/material";
 
+const portNumber = 5000;
+const baseURL = `http://localhost:${portNumber}`;
+
 function AddEditTransaction({
   showAddEditTransactionModal,
   setShowAddEditTransactionModal,
@@ -18,77 +23,94 @@ function AddEditTransaction({
   setSelectedItemForEdit,
   getTransactions
 }) {
-  const [loading, setLoading] = useState(false);
-  const [value, setValue] = useState("");
-  const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState({title: '', content: ''})
 
-  const handleChange = (event) => {
+  const [loading, setLoading] = useState(false);
+  const [value, setValue] = useState("");  // Required ?
+  const [open, setOpen] = useState(false); // Merge to dialog
+  const [dialog, setDialog] = useState({title: '', content: ''});
+  const [date, setDate] = useState((selectedItemForEdit ? moment(selectedItemForEdit.date) : null));
+
+  const validateAmt = (event) => {
     setValue(event.target.value);
 
     if (event.target.value < 0) {
       setDialog({ title: ' Error', content: 'Value of amount cannot be negative' });
       setOpen(true);
+
       document.getElementById("myForm").reset();
     }
   };
-  const onFinish = async (values) => {
-    const isValid = validateFormInput(values)
-    if(!isValid) return;
-    try {
-      const user = JSON.parse(localStorage.getItem("expense-tracker-user"));
-      setLoading(true);
-      if (selectedItemForEdit) {
-        await axios.post("/api/transactions/edit-transaction", {
-          payload: {
-            ...values,
-            userid: user._id,
-          },
-          transactionId: selectedItemForEdit._id,
-        });
-        getTransactions();
-        message.success("Transaction Updated successfully");
-      } else {
-        await axios.post("/api/transactions/add-transaction", {
-          ...values,
-          userid: user._id,
-        });
-        getTransactions();
-        message.success("Transaction added successfully");
-      }
-      setShowAddEditTransactionModal(false);
-      setSelectedItemForEdit(null);
-      setLoading(false);
-    } catch (error) {
-      message.error("Something went wrong");
-      setLoading(false);
-    }
-  };
+
+  const validateDate = (_, value) => {
+    const pickedDate = new Date(value)
+    const currentDate = new Date()
+    return currentDate.valueOf() < pickedDate.valueOf() ? Promise.reject(new Error('Date not accepted')) : Promise.resolve()
+  }
 
   const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
 
   const validateFormInput = (values) => {
     const fields = Object.keys(values);
-    const emptyFields = fields.filter((field) => values[field] === undefined || values[field] === '');
-    if (emptyFields.length === 0) return true;
-    const messagePostfix = emptyFields.length > 1 ? 'fields cannot be empty!' : 'field cannot be empty!'
-    const message = `${emptyFields.map(capitalizeFirstLetter).join(', ')} ${messagePostfix}`;
+    const emptyFields = fields.filter((field) => values[field] === undefined || values[field] === null || values[field] === '');
+    if (emptyFields.length === 0) 
+      return true;
+
+    const message = `${emptyFields.map(capitalizeFirstLetter).join(', ')} fields cannot be empty!`;
+
     setOpen(true);
     setDialog({ title: ' Validation Error', content: message });
+
     return false;
   };
 
-  const resetDialog = () => {
-    setOpen(false);
-    setDialog({ title: '', content: '' });
+  const onFinish = async (values) => {
+    values.date = date;
+
+    const isValid = validateFormInput(values)
+    if(!isValid) 
+      return;
+
+    try {
+      const user = JSON.parse(localStorage.getItem("expense-tracker-user"));
+
+      setLoading(true);
+
+      if (selectedItemForEdit) {
+        await axios.post(`${baseURL}/api/transactions/edit-transaction`, {
+          payload: {
+            ...values,
+            userid: user._id
+          },
+          transactionId: selectedItemForEdit._id
+        });
+
+        getTransactions();
+
+        message.success("Transaction updated successfully");
+      } else {
+        await axios.post(`${baseURL}/api/transactions/add-transaction`, {
+          ...values,
+          userid: user._id,
+        });
+
+        getTransactions();
+
+        message.success("Transaction added successfully");
+      }
+
+      setShowAddEditTransactionModal(false);
+      setSelectedItemForEdit(null);
+
+      setLoading(false);
+    } catch (error) {
+      message.error("Something went wrong\nPlease try again later");
+      setLoading(false);
+    }
   };
 
-
-  const validateDate = (_, value) => {
-    const pickedDate = new Date(value)
-    const currentDate = new Date()
-    return currentDate.valueOf() < pickedDate.valueOf() ? Promise.reject(new Error('Not accepted')) : Promise.resolve()
-  }
+  const resetDialog = () => { // can be merged in to CustomDialog ?
+    setDialog({ title: '', content: '' });
+  };
 
   const CustomDialog = ({ open, onClose, title, content }) => {
     return (
@@ -104,6 +126,12 @@ function AddEditTransaction({
     );
   };
 
+  const initialValues = () => {
+    if (!selectedItemForEdit)
+      return null;
+    const {date, ...values} = selectedItemForEdit;
+    return values;
+  };
 
   return (
     <Modal
@@ -113,15 +141,17 @@ function AddEditTransaction({
       footer={false}
     >
       <CustomDialog open={open} onClose={resetDialog} title={dialog.title} content={dialog.content} />
+
       {loading && <Spinner />}
+
       <Form
         layout="vertical"
         className="transaction-form"
         onFinish={onFinish}
-        initialValues={selectedItemForEdit}
+        initialValues={initialValues()}
         id="myForm"
       >
-        <Form.Item label="Amount" name="amount" id="value" value={value} onBlur={handleChange}>
+        <Form.Item label="Amount" name="amount" id="value" value={value} onBlur={validateAmt}>
           <Input type="text" />
         </Form.Item>
 
@@ -147,9 +177,9 @@ function AddEditTransaction({
         </Form.Item>
 
         <Form.Item label="Date" name="date" rules={[
-          {message: 'Invalid Date!', validator: validateDate}
+          {message: 'Date Invalid!', validator: validateDate}
         ]}>
-          <Input type="date" />
+          <DatePicker defaultValue={date} onChange={(date, dateString) => setDate(date)} />
         </Form.Item>
 
         <Form.Item label="Reference" name="reference">
