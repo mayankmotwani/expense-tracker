@@ -7,6 +7,9 @@ import Input from "antd/lib/input/Input";
 import Spinner from "../components/Spinner";
 import "../resources/authentication.css";
 
+const portNumber = 5000;
+const baseURL = `http://localhost:${portNumber}`;
+
 function Register() {
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +19,7 @@ function Register() {
     try {
       setLoading(true);
 
-      await axios.post("/api/users/register", values);
+      await axios.post(`${baseURL}/api/users/register`, values);
 
       message.success("Registration successfull");
       setLoading(false);
