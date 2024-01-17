@@ -16,6 +16,8 @@ import Spinner from "../components/Spinner";
 import "../resources/transactions.css";
 
 const { RangePicker } = DatePicker;
+const portNumber = 5000;
+const baseURL = `http://localhost:${portNumber}`;
 
 function Home() {
   const [timePeriod, setTimePeriod] = useState("7");
@@ -36,7 +38,7 @@ function Home() {
 
       setLoading(true);
 
-      const response = await axios.post("/api/transactions/get-all-transactions", {
+      const response = await axios.post(`${baseURL}/api/transactions/get-all-transactions`, {
           userid: user._id,
           timePeriod,
           ...(timePeriod === "custom" && { selectedRange }),
@@ -44,9 +46,9 @@ function Home() {
         }
       );
       
-      setLoading(false);
-
       setTransactionsData(response.data);
+
+      setLoading(false);
     } catch (error) {
       setLoading(false);
       message.error("Something went wrong\nPlease try again later");
@@ -57,7 +59,7 @@ function Home() {
     try {
       setLoading(true);
 
-      await axios.post("/api/transactions/delete-transaction", {
+      await axios.post(`${baseURL}/api/transactions/delete-transaction`, {
         transactionId: record._id,
       });
 
@@ -127,58 +129,56 @@ function Home() {
       {loading && <Spinner />}
 
       <div className="filter d-flex justify-content-between align-items-center">
-        <div className="d-flex">
-          <div className="d-flex flex-column">
-            <h6>Select Time Period</h6>
-            <Select value={timePeriod} onChange={(value) => setTimePeriod(value)}>
-              <Select.Option value="7">Last 1 Week</Select.Option>
-              <Select.Option value="30">Last 1 Month</Select.Option>
-              <Select.Option value="365">Last 1 Year</Select.Option>
-              <Select.Option value="custom">Custom</Select.Option>
-            </Select>
+        <div className="d-flex flex-column">
+          <h6>Select Time Period</h6>
+          <Select value={timePeriod} onChange={(value) => setTimePeriod(value)}>
+            <Select.Option value="7">Last 1 Week</Select.Option>
+            <Select.Option value="30">Last 1 Month</Select.Option>
+            <Select.Option value="365">Last 1 Year</Select.Option>
+            <Select.Option value="custom">Custom</Select.Option>
+          </Select>
 
-            {timePeriod === "custom" && (
-              <div className="mt-2">
-                <RangePicker
-                  value={selectedRange}
-                  onChange={(values) => setSelectedRange(values)}
-                />
-              </div>
-            )}
-          </div>
-              
-          <div className="d-flex flex-column mx-5">
-            <h6>Select Type</h6>
-            <Select value={type} onChange={(value) => setType(value)}>
-              <Select.Option value="all">All</Select.Option>
-              <Select.Option value="income">Income</Select.Option>
-              <Select.Option value="expense">Expense</Select.Option>
-            </Select>
-          </div>
+          {timePeriod === "custom" && (
+            <div className="mt-2">
+              <RangePicker
+                value={selectedRange}
+                onChange={(values) => setSelectedRange(values)}
+              />
+            </div>
+          )}
+        </div>
+            
+        <div className="d-flex flex-column">
+          <h6>Select Type</h6>
+          <Select value={type} onChange={(value) => setType(value)}>
+            <Select.Option value="all">All</Select.Option>
+            <Select.Option value="income">Income</Select.Option>
+            <Select.Option value="expense">Expense</Select.Option>
+          </Select>
         </div>
 
-        <div className="d-flex">
-          <div className="view-switch mx-5">
-            <UnorderedListOutlined
-              className={`mx-3 ${
-                viewType === "table" ? "active-icon" : "inactive-icon"
-              }`}
-              onClick={() => setViewType("table")}
-              size={30}
-            />
-            <AreaChartOutlined
-              className={`${
-                viewType === "analytics" ? "active-icon" : "inactive-icon"
-              }`}
-              onClick={() => setViewType("analytics")}
-              size={30}
-            />
-          </div>
-
-          <button className="primary" onClick={() => setShowAddEditTransactionModal(true)}>
-            ADD TRANSACTION
-          </button>
+        <div className="view-switch">
+          <UnorderedListOutlined
+            className={`mx-2 ${
+              viewType === "table" ? "active-icon" : "inactive-icon"
+            }`}
+            onClick={() => setViewType("table")}
+            size={30}
+          />
+          <AreaChartOutlined
+            className={`mx-2 ${
+              viewType === "analytics" ? "active-icon" : "inactive-icon"
+            }`}
+            onClick={() => setViewType("analytics")}
+            size={30}
+          />
         </div>
+
+        <button className="primary" onClick={() => {
+          setShowAddEditTransactionModal(true);
+        }}>
+          ADD TRANSACTION
+        </button>
       </div>
 
       <div className="table-analytics">
