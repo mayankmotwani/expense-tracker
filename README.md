@@ -22,6 +22,7 @@ and
 ```
 npm run client-install
 ```
+**Note:** To use your own MongoDB (Atlas) database cluster, obtain the connection string and paste it at line ```3``` of the ```dbConnect``` file.
 ### Running
 If you're using VSCode, you can split the terminal and execute both the following commands in each terminal.
 1. Start the server
