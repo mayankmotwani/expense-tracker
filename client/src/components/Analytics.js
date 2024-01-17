@@ -18,7 +18,7 @@ function Analytics({ transactions, type }) {
   //const totalTurnover = transactions.reduce((acc, transaction) => acc + transaction.amount, 0);
   const totalIncomeTurnover = incomeTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
   const totalExpenseTurnover = expenseTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
-  const totalTurnover = totalIncomeTurnover - totalExpenseTurnover;
+  const totalTurnover = totalIncomeTurnover + totalExpenseTurnover;
   
   const totalIncomeTurnoverPercentage =
     (totalIncomeTurnover / totalTurnover) * 100;
@@ -40,18 +40,21 @@ function Analytics({ transactions, type }) {
   const EmptyPlaceholder = ({message}) => <div className="empty-placeholder">{message}</div>
 
   const CategoryWiseTransactionChart = ({transactionType, totalTurnOver}) => {
-    const incomeList = []
+    const transactions = (transactionType === "income") ? incomeTransactions : expenseTransactions;
+    
+    const list = []
     categories.forEach((category) => {
-      const transactions = (transactionType === "income") ? incomeTransactions : expenseTransactions;
-      const amount = transactions.reduce((acc, t) => acc + t.amount, 0);
-      amount > 0 && incomeList.push(
+      const amount = transactions
+        .filter((t) => t.category === category)
+        .reduce((acc, t) => acc + t.amount, 0);
+      amount > 0 && list.push(
         <div className="category-card">
           <h5>{category}</h5>
           <Progress strokeColor="#0B5AD9" percent={((amount / totalTurnOver) * 100).toFixed(0)} />
         </div>
       );
     })
-    return incomeList.length ? incomeList : <EmptyPlaceholder message={`No ${transactionType} found for the selected duration and type`}/>
+    return list.length ? list : <EmptyPlaceholder message={`No ${transactionType} transactions found for the selected duration`}/>
   }
 
   return (
