@@ -7,6 +7,9 @@ import Input from "antd/lib/input/Input";
 import Spinner from "../components/Spinner";
 import "../resources/authentication.css";
 
+const portNumber = 5000;
+const baseURL = `http://localhost:${portNumber}`;
+
 function Login() {
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +19,7 @@ function Login() {
     try {
       setLoading(true);
 
-      const response = await axios.post("/api/users/login", values);
+      const response = await axios.post(`${baseURL}/api/users/login`, values);
 
       let { password, ...userData } = response.data;
       localStorage.setItem(
