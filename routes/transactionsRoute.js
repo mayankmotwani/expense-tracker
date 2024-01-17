@@ -42,22 +42,12 @@ router.post("/get-all-transactions", async function (req, res) {
     try {
         const transactions = await Transaction.find({
             userid: req.body.userid,
-            ...(timePeriod !== "custom" ?
-                {
-                    date: {
-                        $gt: moment().subtract(Number(timePeriod), "d").toDate(),
-                    }
-                }
-                :
-                {
-                    date: {
-                        $gte: selectedRange[0],
-                        $lt: selectedRange[1],
-                    }
-                }),
+            date: timePeriod !== "custom"
+              ? { $gt: moment().subtract(Number(timePeriod), "d").toDate() }
+              : { $gte: selectedRange[0], $lt: selectedRange[1] },
             ...(type !== 'all' && { type })
         });
-
+        
         res.send(transactions);
     } catch (error) {
         console.log(error);
