@@ -10,7 +10,7 @@ function DefaultLayout(props) {
 
   const navigate = useNavigate();
   const menu = (
-    <Menu
+    <Menu style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       items={[
         {
           label: (
@@ -34,7 +34,7 @@ function DefaultLayout(props) {
         </div>
         
         <div>
-          <Dropdown overlay={menu} placement="bottomLeft" overlayStyle={{ display: 'flex', justifyContent: 'center' }}>
+          <Dropdown overlay={menu} placement="bottomLeft">
             <button className="primary profile-button">
               <UserOutlined />
               <div className="profile-name">{user.name}</div>
